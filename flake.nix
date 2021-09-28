@@ -15,9 +15,8 @@
 
     overlay = final: prev: rec {
       beamPackages = prev.beam.packagesWith prev.beam.interpreters.erlangR24;
-      nodeDependencies = (prev.callPackage ./assets/default.nix { }).shell.nodeDependencies;
 
-      kazarma = prev.callPackage ./nix/kazarma.nix { inherit beamPackages nodeDependencies; };
+      kazarma = prev.callPackage ./nix/kazarma.nix { inherit beamPackages; };
       docker-release = prev.callPackage ./nix/docker-prod.nix { inherit kazarma;};
     };
     in utils.lib.eachSystem [ "x86_64-linux" "x86_64-darwin" "aarch64-linux"] (system: rec {
@@ -37,6 +36,11 @@
           pkgs = legacyPackages;
           db_name = "kazarma_test";
           MIX_ENV = "test";
+        };
+        prod = import ./nix/shell.nix {
+          pkgs = legacyPackages;
+          db_name = "kazarma_prod";
+          MIX_ENV = "prod";
         };
       };
       apps.kazarma = utils.lib.mkApp { drv = packages.kazarma; };
