@@ -265,6 +265,10 @@ let
         sha256 = "1x5qjsn52smhbgz1vmanr2nr8bwpnr1ffayv3dsspizxsg407knr";
       };
 
+      preBuild = ''
+          touch config/prod.exs
+      '';
+
       beamDeps = [ certifi cldr_utils decimal gettext jason nimble_parsec plug ];
     };
 
