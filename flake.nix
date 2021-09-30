@@ -4,14 +4,19 @@
   inputs = {
     nixpkgs.url = github:NixOS/nixpkgs?ref=master;
     utils.url = "github:numtide/flake-utils";
+    npmlock2nix = { url = "github:nix-community/npmlock2nix"; flake = false; };
   };
 
-  outputs = { self, nixpkgs, utils }:
+  outputs = { self, nixpkgs, utils, npmlock2nix }:
     let
     pkgsForSystem = system: import nixpkgs {
-        overlays = [ overlay ];
+        overlays = [ npmlock2nixOverlay overlay ];
         inherit system;
       };
+
+    npmlock2nixOverlay = final: prev: {
+      npmlock2nix = import npmlock2nix { pkgs = final; };
+    };
 
     overlay = final: prev: rec {
       beamPackages = prev.beam.packagesWith prev.beam.interpreters.erlangR24;
