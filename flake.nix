@@ -20,14 +20,13 @@
 
     overlay = final: prev: rec {
       beamPackages = prev.beam.packagesWith prev.beam.interpreters.erlangR24;
-
-      kazarma = prev.callPackage ./nix/kazarma.nix { inherit beamPackages; };
-      docker-release = prev.callPackage ./nix/docker-prod.nix { inherit kazarma;};
+      elixir = prev.beam.interpreters.elixir_1_11;
+      kazarma = prev.callPackage ./nix/kazarma.nix { inherit beamPackages elixir; };
     };
     in utils.lib.eachSystem [ "x86_64-linux" "x86_64-darwin" "aarch64-linux"] (system: rec {
       legacyPackages = pkgsForSystem system;
       packages = utils.lib.flattenTree {
-        inherit (legacyPackages) kazarma docker-release;
+        inherit (legacyPackages) kazarma;
       };
       defaultPackage = packages.kazarma;
       devShell = self.devShells.${system}.dev;

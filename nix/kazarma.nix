@@ -2,13 +2,35 @@
     lib,
     stdenv,
     fetchFromGitLab,
+    writeText,
     beamPackages,
-    npmlock2nix
+    npmlock2nix,
+    nodePackages, 
+    elixir  
 }:
     let
-      mixNixDeps = import ./../deps.nix { inherit lib beamPackages overrides; };
-
+      mixNixDeps = import ./deps.nix { inherit lib beamPackages overrides; };
+        npm = nodePackages.npm;
         overrides = (final: prev: {
+          mime = prev.mime.override {
+          patchPhase =
+            let
+              cfgFile = writeText "config.exs" ''
+                use Mix.Config
+                config :mime, :types, %{
+                  "application/xml" => ["xml"],
+                  "application/xrd+xml" => ["xrd+xml"],
+                  "application/jrd+json" => ["jrd+json"],
+                  "application/activity+json" => ["activity+json"],
+                  "application/ld+json" => ["activity+json"]
+                  }
+              '';
+            in
+            ''
+              mkdir config
+              cp ${cfgFile} config/config.exs
+            '';
+        };
         # mix2nix does not support git dependencies yet,
         # so we need to add them manually
         polyjuice_util = beamPackages.buildMix rec {
@@ -55,21 +77,74 @@
           '';
           beamDeps = [ ];
         };
+
+        activity_pub = beamPackages.buildMix rec {
+          name = "activity_pub";
+          version = "0.1.0";
+
+          src = fetchFromGitLab {
+            domain = "gitlab.com";
+            owner = "kazarma";
+            repo = "ActivityPub";
+            rev = "56eeab2270fd271e6388fa3071d8b240acb6c249";
+            sha256 = "sha256-j7axNibC6LQI7pWGiSP5H2w4dTUJmiXmqPxfYsVlLXs=";
+          };
+
+          preBuild = '' 
+            export DATABASE_URL="ecto://$POSTGRES_USER:$POSTGRES_PASSWORD@localhost:$DB_NAME"
+            export SECRET_KEY_BASE="raaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaandom"
+          '';
+
+          beamDeps = with final; [ phoenix phoenix_ecto ecto_sql postgrex phoenix_live_dashboard telemetry gettext jason plug_cowboy oban hackney tesla http_signatures pointers pointers_ulid ];
+        };
+
+        matrix_app_service = beamPackages.buildMix {
+          name = "matrix_app_service";
+          version = "0.1.0";
+
+          src = fetchFromGitLab {
+            domain = "gitlab.com";
+            owner = "kazarma";
+            repo = "matrix_app_service.ex";
+            rev = "de037620455e5c05d7dac4e1cb8609e78dd7f15e";
+            sha256 = "sha256-l8eCJ5mcCE4pwdJYwVKMrI2PBtW8AcVCo8lJ+W9nI2E=";
+            };
+
+          beamDeps = with final; [ phoenix phoenix_ecto ecto_sql postgrex telemetry plug_cowboy jason polyjuice_client  ];
+        };
       });
     in beamPackages.mixRelease rec {
         pname = "kazarma";
         src = ../.;
         inherit mixNixDeps;
-        version = "0.0.0";
+        version = "0.1.0";
         MIX_DEBUG=1;
+        RELEASE_DISTRIBUTION="none";
+        RELEASE_TMP="tmp";
 
         LANG = "en_US.UTF-8";
         LANGUAGE = "en_US:en";
         LC_ALL = "en_US.UTF-8";
 
+        nativeBuildInputs = [ elixir ];
+
         node_modules = npmlock2nix.node_modules {
           src = ../assets;
         };
+
+        postUnpack =
+                 let
+                   cfgFile = writeText "runtime.exs" ''
+                     import Config
+                     config :kazarma,
+                       :database_url, System.fetch_env!("DATABASE_URL")
+                       :secret_key_base, System.fetch_env!("SECRET_KEY_BASE")
+                   '';
+                 in
+                 ''
+                   mkdir config
+                   cp ${cfgFile} config/runtime.exs
+                 '';
 
         postConfigure = ''
             rm _build/prod/lib/ex_cldr
@@ -79,7 +154,11 @@
 
         postBuild = ''
             ln -sf ${node_modules}/node_modules assets/node_modules
+            ${npm}/bin/npm run deploy --prefix ./assets
             mix do deps.loadpaths --no-deps-check, phx.digest
-            ln -s /app "$out"
+        '';
+
+        postInstall = ''
+            echo "${beamPackages.erlang.version}" > $out/OTP_VERSION
         '';
     }

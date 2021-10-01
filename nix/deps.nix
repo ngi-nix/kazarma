@@ -257,15 +257,19 @@ let
 
     ex_cldr = buildMix rec {
       name = "ex_cldr";
-      version = "2.23.0";
+      version = "2.23.2";
 
       src = fetchHex {
         pkg = "${name}";
         version = "${version}";
-        sha256 = "0ivk9hwr0hbv5yh04gyp7crwbxx2qkcr219r094jlqp22lqsv7bw";
+        sha256 = "1x5qjsn52smhbgz1vmanr2nr8bwpnr1ffayv3dsspizxsg407knr";
       };
 
-      beamDeps = [ certifi cldr_utils decimal gettext jason nimble_parsec plug telemetry ];
+      preBuild = ''
+          touch config/prod.exs
+      '';
+
+      beamDeps = [ certifi cldr_utils decimal gettext jason nimble_parsec plug ];
     };
 
     ex_doc = buildMix rec {
@@ -608,12 +612,12 @@ let
 
     plug = buildMix rec {
       name = "plug";
-      version = "1.11.1";
+      version = "1.12.1";
 
       src = fetchHex {
         pkg = "${name}";
         version = "${version}";
-        sha256 = "07w83cx4xx90x4l1kmil4lpby55lpw83jfw3y08pqn5vxx7lwli3";
+        sha256 = "02ykw1666amp8mjzfwgm155fp4fszg2nv5l4nya09hkvfyd7jznm";
       };
 
       beamDeps = [ mime plug_crypto telemetry ];

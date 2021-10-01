@@ -5,7 +5,7 @@ let
   elixir = beam.packages.erlangR24.elixir_1_11;
 in
 mkShell {
-    buildInputs = [ git elixir mix2nix postgresql_13 docker-compose nodePackages.node2nix ]
+    buildInputs = [ git elixir mix2nix postgresql_13 nodePackages.node2nix nodejs]
       ++ lib.optional stdenv.isLinux inotify-tools
       ++ lib.optionals stdenv.isDarwin
         (with darwin.apple_sdk.frameworks; [ CoreFoundation CoreServices ]);
@@ -17,6 +17,7 @@ mkShell {
       export HEX_HOME=$PWD/.nix-mix
       export PATH=$MIX_HOME/bin:$PATH
       export PATH=$HEX_HOME/bin:$PATH
+      export MIX_REBAR3=${rebar3}/bin/rebar3
       mix local.hex --if-missing
       export ERL_AFLAGS="-kernel shell_history enabled" 
       export MIX_ENV=${MIX_ENV};
