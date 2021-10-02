@@ -91,8 +91,8 @@
           };
 
           preBuild = '' 
-            export DATABASE_URL="ecto://$POSTGRES_USER:$POSTGRES_PASSWORD@localhost:$DB_NAME"
-            export SECRET_KEY_BASE="raaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaandom"
+            export DATABASE_URL=$DATABASE_URL
+            export SECRET_KEY_BASE=$SECRET_KEY_BASE
           '';
 
           beamDeps = with final; [ phoenix phoenix_ecto ecto_sql postgrex phoenix_live_dashboard telemetry gettext jason plug_cowboy oban hackney tesla http_signatures pointers pointers_ulid ];
@@ -119,8 +119,6 @@
         inherit mixNixDeps;
         version = "0.1.0";
         MIX_DEBUG=1;
-        RELEASE_DISTRIBUTION="none";
-        RELEASE_TMP="tmp";
 
         LANG = "en_US.UTF-8";
         LANGUAGE = "en_US:en";
@@ -131,20 +129,6 @@
         node_modules = npmlock2nix.node_modules {
           src = ../assets;
         };
-
-        postUnpack =
-                 let
-                   cfgFile = writeText "runtime.exs" ''
-                     import Config
-                     config :kazarma,
-                       :database_url, System.fetch_env!("DATABASE_URL")
-                       :secret_key_base, System.fetch_env!("SECRET_KEY_BASE")
-                   '';
-                 in
-                 ''
-                   mkdir config
-                   cp ${cfgFile} config/runtime.exs
-                 '';
 
         postConfigure = ''
             rm _build/prod/lib/ex_cldr

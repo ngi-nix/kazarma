@@ -50,5 +50,28 @@
       apps.kazarma = utils.lib.mkApp { drv = packages.kazarma; };
       hydraJobs = { inherit (legacyPackages) kazarma; };
       checks = { inherit (legacyPackages) kazarma; };
+      nixosModules.kazarma =
+        { lib, config, ... }:
+            with lib;
+            let
+              cfg = config.services.kazarma;
+            in {
+              config = mkIf cfg.enable {
+                    nixpkgs.overlays = [ self.overlay ];
+
+                    systemd.packages = [ defaultPackage ];
+
+                    systemd.services.kazarma = {
+                      path = [ defaultPackage ];
+                      description = "Kazarma, a Matrix-ActivityPub bridge service.";
+
+                      serviceConfig = {
+                        Type = "simple";
+                        ExecStart = "${defaultPackage}/bin/kazarma daemon";
+                        wantedBy = [ "default.target" ];
+                      };
+                    };
+              };
+            };
     }) // { overlay = overlay ;};
 }

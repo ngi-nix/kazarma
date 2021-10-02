@@ -266,7 +266,7 @@ let
       };
 
       preBuild = ''
-          touch config/prod.exs
+          echo "import Config" > config/prod.exs
       '';
 
       beamDeps = [ certifi cldr_utils decimal gettext jason nimble_parsec plug ];

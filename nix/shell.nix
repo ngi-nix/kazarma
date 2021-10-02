@@ -5,7 +5,7 @@ let
   elixir = beam.packages.erlangR24.elixir_1_11;
 in
 mkShell {
-    buildInputs = [ git elixir mix2nix postgresql_13 nodePackages.node2nix nodejs]
+    buildInputs = [ git elixir mix2nix postgresql_13 nodejs]
       ++ lib.optional stdenv.isLinux inotify-tools
       ++ lib.optionals stdenv.isDarwin
         (with darwin.apple_sdk.frameworks; [ CoreFoundation CoreServices ]);
