@@ -6,7 +6,7 @@
     beamPackages,
     npmlock2nix,
     nodePackages, 
-    elixir  
+    elixir
 }:
     let
       mixNixDeps = import ./deps.nix { inherit lib beamPackages overrides; };
@@ -62,7 +62,7 @@
 
         http_signatures = beamPackages.buildMix rec {
           name = "http_signatures";
-          version = "0.0.1";
+          version = "0.1.0";
 
           src = fetchFromGitLab {
             domain = "git.pleroma.social";
