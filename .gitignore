@@ -26,7 +26,13 @@ kazarma-*.tar
 # we ignore priv/static. You may want to comment
 # this depending on your deployment strategy.
 /priv/static/
+/assets/node_modules/
 
+/.nix-mix
+/.envrc
+
+/result
+ 
 /.elixir_ls/
 .gitsecret/keys/random_seed
 !*.secret
