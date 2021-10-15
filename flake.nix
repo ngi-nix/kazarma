@@ -56,18 +56,12 @@
             let
               cfg = config.services.kazarma;
             in {
-              options = {
-                services.kazarma = {
+              options.services.kazarma = {
                   enable = mkEnableOption "Enable Kazarma, a Matrix bridge to ActivityPub";
                   host = mkOption {
                     type = types.str;
                     default = "127.0.0.1";
                     description = "Host for the Kazarma application, used to generate URLs.";
-                  };
-                  databaseUrl = mkOption {
-                    type = types.str;
-                    default = "ecto://kazarma:postgres@postgres_kazarma/kazarma";
-                    description = "URL with ecto:// scheme (ecto://user:password@host:database),";
                   };
                   secretKeyBase = mkOption {
                     type = types.str;
@@ -114,38 +108,89 @@
                     default = true;
                     description = "Whether to display profiles for ActivityPub actors. It can help Matrix users to get the (puppet) Matrix ID to reach an ActivityPub actor.";
                   };
+                  database = {
+                      user = mkOption {
+                        type = types.str;
+                        default = "kazarma";
+                        description = "the DB user name.";
+                      };
+                      password = mkOption {
+                        type = types.str;
+                        default = "postgres";
+                        description = "the DB password.";
+                      };
+                      host = mkOption {
+                        type = types.str;
+                        default = "/run/postgresql";
+                        description = "the DB host name.";
+                      };
+                      name = mkOption {
+                        type = types.str;
+                        default = "kazarma";
+                        description = "the DB name.";
+                      };
+                      url = mkOption {
+                        type = types.str;
+                        default = "ecto://${user}:${password}@${host}/${name}";
+                        description = "URL with ecto:// scheme (ecto://user:password@host:database)";
+                      };
+                      createLocally = mkEnableOption "create the database on the instance";
+                  };
                 };
-              };
 
               config = mkIf cfg.enable {
                     nixpkgs.overlays = [ self.overlay ];
 
-                    systemd.packages = [ defaultPackage matrix-synapse element-desktop pleroma-otp ];
+                    localPostgres = (cfg.settings.database.host == "/run/postgresql" || cfg.settings.database.host == "localhost");
+                    
+                    services.postgresql = mkIf localPostgres {
+                      enable = mkDefault true;
+                    };
 
                     systemd.services.kazarma = {
-                      path = [ defaultPackage ];
                       description = "Kazarma, a Matrix-ActivityPub bridge service.";
+                      services = { 
+                        matrix-synapse.enable = true;
+                        element-desktop.enable = true;                 
+                        pleroma-otp.enable = true;
+                      };
+
+                    systemd.services.kazarma-postgresql = mkIf cfg.settings.database.createLocally {
+                      description = "Kazarma postgresql db";
+                      after = [ "postgresql.service" ];
+                      bindsTo = [ "postgresql.service" ];
+                      requiredBy = [ "kazarma.service" ];
+                      partOf = [ "kazarma.service" ];
+                      script = with cfg.settings.database; ''
+                        PSQL() {
+                          ${config.services.postgresql.package}/bin/psql --port=${toString cfg.settings.database.port} "$@"
+                        }
+                        # check if the database already exists
+                        if ! PSQL -lqt | ${pkgs.coreutils}/bin/cut -d \| -f 1 | ${pkgs.gnugrep}/bin/grep -qw ${name} ; then
+                          PSQL -tAc "CREATE ROLE ${user} WITH LOGIN;"
+                          PSQL -tAc "CREATE DATABASE ${name} WITH OWNER ${user};"
+                        fi
+                      '';
+                      serviceConfig = {
+                        User = config.services.postgresql.superUser;
+                        Type = "oneshot";
+                        RemainAfterExit = true;
+                        };
+                      };
+
+                      environment = {
+                        HOMESERVER_TOKEN = cfg.homeserverToken;
+                        ACCESS_TOKEN = cfg.accessToken;
+                        MATRIX_URL = cfg.matrixUrl;
+                        ACTIVITY_PUB_DOMAIN = cfg.activityPubDomain;
+                        RELEASE_DISTRIBUTION = "none";
+                        RELEASE_TMP = "tmp";
+                      };
 
                       serviceConfig = {
-                        Type = "simple";
                         ExecStart = "${defaultPackage}/bin/kazarma daemon";
-                        wantedBy = [ "default.target" ];
+                        wantedBy = [ "multi-user.target" ];
                       };
-                    };
-
-                    services.matrix-synapse = {
-                      enable = true;
-                      package = nixpkgs.matrix-synapse;
-                    };
-
-                    services.element-desktop = {
-                      enable = true;
-                      package = nixpkgs.element-desktop;
-                    };
-
-                    services.pleroma-otp = {
-                      enable = true;
-                      package = nixpkgs.pleroma-otp;
                     };
               };
               #   # A VM test of the NixOS module.
