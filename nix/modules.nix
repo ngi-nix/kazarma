@@ -10,11 +10,6 @@
                 default = "127.0.0.1";
                 description = "Host for the Kazarma application, used to generate URLs.";
               };
-              secretKeyBase = mkOption {
-                type = types.str;
-                default = null;
-                description = "Phoenix's secret key base, used to sign session cookies. With Mix and Phoenix, it can be easily generated with mix phx.gen.secret.";
-              };
               homeserverToken = mkOption {
                 type = types.str;
                 default = null;
@@ -86,7 +81,7 @@
             };
           config = mkIf cfg.enable {
                 nixpkgs.overlays = [ self.overlay ];
-                localPostgres = cfg.settings.database.socket_dir == "/run/postgresql"; # || cfg.settings.database.host == "localhost");
+                localPostgres = (cfg.settings.database.socket_dir == "/run/postgresql" || cfg.settings.database.host == "localhost");
                 
                 services.postgresql = mkIf localPostgres {
                   enable = mkDefault true;
@@ -136,7 +131,7 @@
                   };
                 };
           };
-                        #   # A VM test of the NixOS module.
+        ## A VM test of the NixOS module.
           vmTest =
             with import (nixpkgs + "/nixos/lib/testing-python.nix")
               {
