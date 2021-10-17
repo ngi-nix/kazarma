@@ -69,7 +69,7 @@
             rev = "ca8749c91a31f2b16202bc0ceffd4f2a07729f52";
             sha256 = "sha256-jPfko7+g2iHD+Tb6yjJl8IWRhzauAEmhyM+BQ1RFcmM=";
           };
-          beamDeps = with final; [ hackney poison polyjuice_util ];
+          beamDeps = with final; [ hackney polyjuice_util ];
         };
 
         http_signatures = beamPackages.buildMix rec {
