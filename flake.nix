@@ -121,8 +121,13 @@
                       };
                       host = mkOption {
                         type = types.str;
-                        default = "/run/postgresql";
+                        default = "127.0.0.1";
                         description = "the DB host name.";
+                      };
+                      socket_dir = mkOption {
+                        type = types.str;
+                        default = "/run/postgresql";
+                        description = "DB socket directory.";
                       };
                       name = mkOption {
                         type = types.str;
@@ -178,9 +183,14 @@
                         RELEASE_TMP = "tmp";
                       };
 
+                      gen_key_base = '' 
+                        mix phx.gen.secret > secret_key_base.txt
+                      '';
+
                       serviceConfig = {
                         ExecStart = "${defaultPackage}/bin/kazarma daemon";
                         wantedBy = [ "multi-user.target" ];
+                        LoadCredential = "secret_key_base:secret_key_base.txt";
                       };
                     };
               };
