@@ -50,6 +50,10 @@
                 default = true;
                 description = "Whether to display profiles for ActivityPub actors. It can help Matrix users to get the (puppet) Matrix ID to reach an ActivityPub actor.";
               };
+              secretKeyBasePath = mkOption {
+                type = types.path;
+                description = "Path to read the Phoenix secret_key_base from.";
+              };
               database = {
                   user = mkOption {
                     type = types.str;
@@ -120,14 +124,10 @@
                     RELEASE_DISTRIBUTION = "none";
                     RELEASE_TMP = "tmp";
                   };
-                  gen_key_base = ''
-                    
-                    mix phx.gen.secret > secret_key_base.txt
-                  '';
                   serviceConfig = {
                     ExecStart = "${defaultPackage}/bin/kazarma daemon";
                     wantedBy = [ "multi-user.target" ];
-                    LoadCredential = "secret_key_base:secret_key_base.txt";
+                    LoadCredential = "secret_key_base:${cfg.secretKeyBasePath}";
                   };
                 };
           };
