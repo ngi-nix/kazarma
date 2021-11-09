@@ -25,22 +25,10 @@
                   "application/ld+json" => ["activity+json"]
                   }
               '';
-              submodules = writeText ".git-submodules" ''
-                [submodule "activity_pub"]
-                  path = activity_pub
-                  url = https://gitlab.com/kazarma/ActivityPub.git
-                [submodule "matrix_app_service"]
-                  path = matrix_app_service
-                  url = https://gitlab.com/kazarma/matrix_app_service.ex.git
-                [submodule "polyjuice_client"]
-                  path = polyjuice_client
-                  url = https://gitlab.com/kazarma/polyjuice_client.git
-              '';
             in
             ''
               mkdir config
               cp ${cfgFile} config/config.exs
-              cp ${submodules} .git-submodules
             '';
         };
         # mix2nix does not support git dependencies yet,
@@ -141,6 +129,22 @@
         node_modules = npmlock2nix.node_modules {
           src = ../assets;
         };
+
+        preConfigure = let
+          submodules = writeText ".git-submodules" ''
+                [submodule "activity_pub"]
+                  path = activity_pub
+                  url = https://gitlab.com/kazarma/ActivityPub.git
+                [submodule "matrix_app_service"]
+                  path = matrix_app_service
+                  url = https://gitlab.com/kazarma/matrix_app_service.ex.git
+                [submodule "polyjuice_client"]
+                  path = polyjuice_client
+                  url = https://gitlab.com/kazarma/polyjuice_client.git
+              '';
+          in ''
+            cp ${submodules} .git-submodules
+          '';
 
         postConfigure = ''
             rm _build/prod/lib/ex_cldr
